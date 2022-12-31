@@ -150,75 +150,78 @@ function price_in_time_form_alter(&$form, FormStateInterface $form_state, $form_
  */
 function price_in_time_form_submit($form, FormStateInterface $form_state) {
 
-  $entity = $form_state->getFormObject()->getEntity();
-  $prices_values = $form_state->getValue('price_in_time__slots');
+  if (method_exists($form_state->getFormObject(), 'getEntity')) {
 
-  foreach ($prices_values as $key => $price) {
+    $entity = $form_state->getFormObject()->getEntity();
+    $prices_values = $form_state->getValue('price_in_time__slots');
 
-    $product_variation_sku = _price_in_time_get_sku_key_from_product_or_variation($entity);
+    foreach ($prices_values as $key => $price) {
 
-    if (!empty($price['price']['number']) && $product_variation_sku) {
+      $product_variation_sku = _price_in_time_get_sku_key_from_product_or_variation($entity);
 
-      $connection = \Drupal::database();
-      $transaction = $connection->startTransaction();
+      if (!empty($price['price']['number']) && $product_variation_sku) {
 
-      try {
+        $connection = \Drupal::database();
+        $transaction = $connection->startTransaction();
 
-        $product_variation = $entity->bundle();
-        $slot_uuid = $price['uuid'];
-        $number = $price['price']['number'];
-        $currency_code = $price['price']['currency_code'];
-        $created = \Drupal::time()->getRequestTime();
+        try {
 
-        if (!_price_in_time_check_row_existance($connection, $slot_uuid, $product_variation_sku)) {
+          $product_variation = $entity->bundle();
+          $slot_uuid = $price['uuid'];
+          $number = $price['price']['number'];
+          $currency_code = $price['price']['currency_code'];
+          $created = \Drupal::time()->getRequestTime();
 
-          $connection
-            ->insert('commerce_product_variation_slots_data')
-            ->fields([
-              'product_variation_sku' => $product_variation_sku,
-              'product_variation' => $product_variation,
-              'slot_uuid' => $slot_uuid,
-              'number' => $number,
-              'currency_code' => $currency_code,
-              'created' => $created,
-          ])->execute();
-        } else {
+          if (!_price_in_time_check_row_existance($connection, $slot_uuid, $product_variation_sku)) {
 
-          $connection->update('commerce_product_variation_slots_data')
-            ->fields([
-              'number' => $number,
-              'currency_code' => $currency_code,
-            ])
-            ->condition('slot_uuid', $slot_uuid)
-            ->condition('product_variation_sku', $product_variation_sku)
-            ->execute();
+            $connection
+              ->insert('commerce_product_variation_slots_data')
+              ->fields([
+                'product_variation_sku' => $product_variation_sku,
+                'product_variation' => $product_variation,
+                'slot_uuid' => $slot_uuid,
+                'number' => $number,
+                'currency_code' => $currency_code,
+                'created' => $created,
+            ])->execute();
+          } else {
+
+            $connection->update('commerce_product_variation_slots_data')
+              ->fields([
+                'number' => $number,
+                'currency_code' => $currency_code,
+              ])
+              ->condition('slot_uuid', $slot_uuid)
+              ->condition('product_variation_sku', $product_variation_sku)
+              ->execute();
+          }
         }
+
+        catch (Exception $exception) {
+          $transaction->rollBack();
+
+          # Here we go to an error, log this into the watchdog.
+          # Sure this will be usefull...
+          \Drupal::logger('[PRICE-IN-TIME]')
+            ->error('Insert error, check the message: ' . $exception->getMessage());
+        }
+
+        # Commit the transaction by unsetting the $transaction variable.
+        unset($transaction);
       }
 
-      catch (Exception $exception) {
-        $transaction->rollBack();
+      # Use the default price if the user not set the price
+      # on the relative form (for the slot). Delete the element
+      # from the database table.
+      else {
 
-        # Here we go to an error, log this into the watchdog.
-        # Sure this will be usefull...
-        \Drupal::logger('[PRICE-IN-TIME]')
-          ->error('Insert error, check the message: ' . $e->getMessage());
+        \Drupal::database()
+          ->delete('commerce_product_variation_slots_data')
+          ->condition('slot_uuid', $price['uuid'])
+          ->condition('product_variation_sku', _price_in_time_get_sku_key_from_product_or_variation($entity))
+          ->condition('product_variation', $entity->bundle())
+          ->execute();
       }
-
-      # Commit the transaction by unsetting the $transaction variable.
-      unset($transaction);
-    }
-
-    # Use the default price if the user not set the price
-    # on the relative form (for the slot). Delete the element
-    # from the database table.
-    else {
-
-      \Drupal::database()
-        ->delete('commerce_product_variation_slots_data')
-        ->condition('slot_uuid', $price['uuid'])
-        ->condition('product_variation_sku', _price_in_time_get_sku_key_from_product_or_variation($entity))
-        ->condition('product_variation', $entity->bundle())
-        ->execute();
     }
   }
 }
@@ -259,8 +262,7 @@ function _price_in_time_check_row_existance($connection, $slot_uuid, $product_va
  */
 function _price_in_time_get_sku_key_from_product_or_variation($entity) {
   return ($entity->getEntityTypeId() === 'commerce_product' && count($entity->getVariations()) === 1) ?
-    (count($entity->getVariations()) > 0 ? $entity->getVariations()[0]->getSku() : false)
-    : $entity->getSku();
+    $entity->getVariations()[0]->getSku() : $entity->getSku();
 }
 
 /**

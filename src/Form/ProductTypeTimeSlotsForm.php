@@ -40,7 +40,7 @@ class ProductTypeTimeSlotsForm extends ConfigFormBase {
    * @param \Drupal\Core\Database\Connection $connection
    *   The database connection.
    */
-  public function __construct(EntityTypeManagerInterface $entity_type_manager, Connection $connection) {
+  final public function __construct(EntityTypeManagerInterface $entity_type_manager, Connection $connection) {
     $this->entity_type_manager = $entity_type_manager;
     $this->connection = $connection;
   }
