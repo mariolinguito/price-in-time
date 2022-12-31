@@ -4,4 +4,4 @@ price_in_time.product_type_time_slots:
     _title: 'Time slots'
     _form: 'Drupal\price_in_time\Form\ProductTypeTimeSlotsForm'
   requirements:
-    _permission: 'administer site configuration'
+    _permission: 'administer price_in_time configuration'
