@@ -1,0 +1,4 @@
+administer price_in_time configuration:
+  title: 'Administer price in time configurations'
+  description: 'Enable this module but pay attention because it is dangerous.'
+  restrict access: true

@@ -40,3 +40,15 @@ This is an example of an order where we previously set the free shipping on the 
 ![Example order with a free shipping bonus](./assets/screenshots/example-order-free-shipping.png)
 
 As you can see, the bonus worth the same as the shipping costs (and this is true for every shipping method with different prices).
+
+### Look at the permissions
+If you want to enable some roles the possibility to change and adjust time slots configuration, you can give these the following permission:
+
+![Example order with a free shipping bonus](./assets/screenshots/permission-for-price-in-time.png)
+
+Of course, the administrator can do everything, and (tip) you should enable some other permissions to give the role the possibility to see the admin toolbar and admin theme:
+
+- _Use the administration pages and help_
+- _Use the commerce administration pages_
+- _View the administration theme_
+- _Use the toolbar_
