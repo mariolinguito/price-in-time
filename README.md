@@ -16,7 +16,7 @@ To enable the module, you should check on the options: **Enable for this product
 
 `Start time: 20:00:00 - End time: 23:59:59`
 
-For the single slot, we can specify the free shipping option, so on the checkout process, all the shipping cost will be canceled by a bonus (with the same price value).
+For the single slot, we can specify the free shipping option, so on the checkout process, all the shipping costs will be canceled by a bonus (with the same price value).
 
 **Note:** there is a check for overlapped times, be sure that there are no overlapped times.
 
@@ -33,3 +33,10 @@ Instead, on the editing page of an existing product/variation, you will see the 
 
 ### On the variation page
 The same thing is for the variation page. The product can have multiple variations (think of a t-shirt, it can be small and blue, large and red, and so on); different prices for the different slots can be set also on the single variation type.
+
+### Where I can see the "free shipping bonus"
+This is an example of an order where we previously set the free shipping on the time slot:
+
+![Example order with a free shipping bonus](./assets/screenshots/example-order-free-shipping.png)
+
+As you can see, the bonus worth the same as the shipping costs (and this is true for every shipping method with different prices).

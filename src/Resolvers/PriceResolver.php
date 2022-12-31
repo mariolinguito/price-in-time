@@ -41,7 +41,7 @@ class PriceResolver implements PriceResolverInterface {
    * @param \Drupal\Core\Database\Connection $connection
    *   The database connection.
    */
-  public function __construct(ConfigFactoryInterface $config_factory, Connection $connection) {
+  final public function __construct(ConfigFactoryInterface $config_factory, Connection $connection) {
     $this->config_factory = $config_factory->get('price_in_time.settings');
     $this->connection = $connection;
   }
