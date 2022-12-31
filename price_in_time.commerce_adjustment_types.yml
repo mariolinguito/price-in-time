@@ -1,0 +1,6 @@
+price_in_time__free_shipping:
+  label: 'Price in Time: free shipping'
+  singular_label: 'price in time free shipping adjustment'
+  plural_label: 'price in time free shipping adjustments'
+  has_ui: true
+  weight: 10

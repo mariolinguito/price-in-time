@@ -1,0 +1,7 @@
+price_in_time.product_type_time_slots:
+  path: '/admin/commerce/config/time-slots'
+  defaults:
+    _title: 'Time slots'
+    _form: 'Drupal\price_in_time\Form\ProductTypeTimeSlotsForm'
+  requirements:
+    _permission: 'administer site configuration'

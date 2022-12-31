@@ -1,0 +1,325 @@
+<?php
+
+/**
+ * @file
+ * Primary module hooks for Price in Time module.
+ */
+
+# Drupal Core.
+use Drupal\Core\Form\FormStateInterface;
+
+# Commerce Product.
+use Drupal\commerce_product\Entity\ProductVariation;
+
+/**
+ * Implements hook_preprocess_page().
+ * 
+ * @param $variables
+ * 
+ * Some style need to be added to the configuration page of the
+ * time slots, so we can inject our custom library to the specific
+ * route (based on route name).
+ * 
+ */
+function price_in_time_preprocess_page(&$variables) {
+  if (\Drupal::routeMatch()->getRouteName() === 'price_in_time.product_type_time_slots') {
+    $variables['#attached']['library'][] = 'price_in_time/price_in_time';
+  }
+}
+
+/**
+ * Implements hook_form_alter().
+ * 
+ * @param $form
+ * @param FormStateInterface $form_state
+ * @param $form_id
+ * 
+ * Edit the form page of the product/variation to insert the custom
+ * prices on the relative slot of time. This will be showed only if
+ * the node is not new and only if it is a product/variation.
+ * 
+ */
+function price_in_time_form_alter(&$form, FormStateInterface $form_state, $form_id) {
+
+  if (\Drupal::service('router.admin_context')->isAdminRoute() &&
+      method_exists($form_state->getFormObject(), 'getEntity') &&
+      _price_in_time_check_bundle_enabled($form_state->getFormObject()->getEntity()->bundle())) {
+
+    #--------------------------------------
+    # define drupal front URL
+    #--------------------------------------
+    global $base_url;
+
+    if (($entity = $form_state->getFormObject()->getEntity()) && !$entity->isNew()) {
+      if (method_exists($entity, 'getVariations') &&
+          count($entity->getVariations()) > 1) {
+
+          # return if there are some other variations.
+          return;
+      }
+
+      #--------------------------------------
+      # define drupal 'fieldset' element
+      #--------------------------------------
+      $form['price_in_time__slots'] = [
+        '#type' => 'fieldset',
+        '#title' => t('Insert the price for different time slots'),
+        '#description' => t('
+          You can edit this configuration on the module page:
+          <a href="'.$base_url.'/admin/commerce/config/time-slots">
+            Price in Time configuration page
+          </a>'),
+        '#prefix' => '<div id="price-in-time--slots">',
+        '#suffix' => '</div>',
+        '#weight' => -100, # we want this at the top.
+      ];
+
+      foreach (_price_in_time_get_times_slots($entity->bundle()) as $key => $slot) {
+
+        #--------------------------------------
+        # define drupal 'markup' element
+        #--------------------------------------
+        $form['price_in_time__slots'][$key]['times_info'] = [
+          '#markup' => '
+            <br> <!-- break the line every slot -->
+            <div class="price_in_time__slots_form_element">
+              FROM '.$slot['start'].' to '.$slot['end'].' (24H)
+            </div>',
+        ];
+        #--------------------------------------
+        # define drupal 'price' element
+        #--------------------------------------
+        $form['price_in_time__slots'][$key]['price'] = [
+          '#type' => 'commerce_price',
+          '#title' => t('Owerride the price for this slot:'),
+          '#default_value' =>
+            _price_in_time_get_slot_price_default_value(
+              $slot['uuid'],
+              _price_in_time_get_sku_key_from_product_or_variation($entity)
+            ),
+        ];
+        #--------------------------------------
+        # define drupal 'hidden' element
+        #--------------------------------------
+        $form['price_in_time__slots'][$key]['uuid'] = [
+          '#type' => 'hidden',
+          '#value' => $slot['uuid'],
+        ];
+      }
+
+      foreach (array_keys($form['actions']) as $action) {
+        if ($action != 'preview' && isset($form['actions'][$action]['#type']) && $form['actions'][$action]['#type'] === 'submit') {
+          $form['actions'][$action]['#submit'][] = 'price_in_time_form_submit';
+        }
+      }
+
+      $form['#tree'] = TRUE;
+    }
+
+    else {
+      #--------------------------------------
+      # define drupal 'fieldset' element
+      #--------------------------------------
+      $form['price_in_time__slots'] = [
+        '#type' => 'fieldset',
+        '#title' => t('Information:'),
+        '#description' => t('
+          You have enabled this product variation on <b>Price in Time</b> module, after the save you 
+          should view the form for the prices.<br>
+          You can edit this configuration on the module page:
+          <a href="'.$base_url.'/admin/commerce/config/time-slots">
+            Price in Time configuration page
+          </a>'),
+        '#prefix' => '<div id="price-in-time--slots">',
+        '#suffix' => '</div>',
+        '#weight' => -100, # we want this at the top.
+      ];
+    }
+  }
+}
+
+/**
+ * Implements hook_form_submit().
+ * 
+ * @param $form
+ * @param FormStateInterface $form_state
+ * 
+ * This will be called after the submit of the form (on the 
+ * node update operations).
+ * 
+ */
+function price_in_time_form_submit($form, FormStateInterface $form_state) {
+
+  $entity = $form_state->getFormObject()->getEntity();
+  $prices_values = $form_state->getValue('price_in_time__slots');
+
+  foreach ($prices_values as $key => $price) {
+
+    $product_variation_sku = _price_in_time_get_sku_key_from_product_or_variation($entity);
+
+    if (!empty($price['price']['number']) && $product_variation_sku) {
+
+      $connection = \Drupal::database();
+      $transaction = $connection->startTransaction();
+
+      try {
+
+        $product_variation = $entity->bundle();
+        $slot_uuid = $price['uuid'];
+        $number = $price['price']['number'];
+        $currency_code = $price['price']['currency_code'];
+        $created = \Drupal::time()->getRequestTime();
+
+        if (!_price_in_time_check_row_existance($connection, $slot_uuid, $product_variation_sku)) {
+
+          $connection
+            ->insert('commerce_product_variation_slots_data')
+            ->fields([
+              'product_variation_sku' => $product_variation_sku,
+              'product_variation' => $product_variation,
+              'slot_uuid' => $slot_uuid,
+              'number' => $number,
+              'currency_code' => $currency_code,
+              'created' => $created,
+          ])->execute();
+        } else {
+
+          $connection->update('commerce_product_variation_slots_data')
+            ->fields([
+              'number' => $number,
+              'currency_code' => $currency_code,
+            ])
+            ->condition('slot_uuid', $slot_uuid)
+            ->condition('product_variation_sku', $product_variation_sku)
+            ->execute();
+        }
+      }
+
+      catch (Exception $exception) {
+        $transaction->rollBack();
+
+        # Here we go to an error, log this into the watchdog.
+        # Sure this will be usefull...
+        \Drupal::logger('[PRICE-IN-TIME]')
+          ->error('Insert error, check the message: ' . $e->getMessage());
+      }
+
+      # Commit the transaction by unsetting the $transaction variable.
+      unset($transaction);
+    }
+
+    # Use the default price if the user not set the price
+    # on the relative form (for the slot). Delete the element
+    # from the database table.
+    else {
+
+      \Drupal::database()
+        ->delete('commerce_product_variation_slots_data')
+        ->condition('slot_uuid', $price['uuid'])
+        ->condition('product_variation_sku', _price_in_time_get_sku_key_from_product_or_variation($entity))
+        ->condition('product_variation', $entity->bundle())
+        ->execute();
+    }
+  }
+}
+
+/**
+ * Implements _hook_check_row_existance().
+ *
+ * @param $connection
+ * @param string $slot_uuid
+ * @param string $product_variation_sku
+ * @return bool
+ * 
+ * Return a boolean to check if the row exists in the custom table named
+ * commerce_product_variation_slots_data, this because we need to update 
+ * the record if exists or insert new one if not.
+ *
+ */
+function _price_in_time_check_row_existance($connection, $slot_uuid, $product_variation_sku) {
+
+  return $connection
+    ->select('commerce_product_variation_slots_data', 'commerce_product_slots')
+    ->condition('commerce_product_slots.slot_uuid', $slot_uuid)
+    ->condition('commerce_product_slots.product_variation_sku', $product_variation_sku)
+    ->countQuery()
+    ->execute()
+    ->fetchField() > 0 ?: 0;
+}
+
+/**
+ * Implements _hook_get_sku_key_from_product_or_variation().
+ *
+ * @param $entity
+ * @return string
+ * 
+ * Return the SKU of the single variation, in any case; in the commerce
+ * product case and in the multiple variations case.
+ *
+ */
+function _price_in_time_get_sku_key_from_product_or_variation($entity) {
+  return ($entity->getEntityTypeId() === 'commerce_product' && count($entity->getVariations()) === 1) ?
+    (count($entity->getVariations()) > 0 ? $entity->getVariations()[0]->getSku() : false)
+    : $entity->getSku();
+}
+
+/**
+ * Implements _hook_check_bundle_enabled().
+ *
+ * @param string $bundle
+ * @return bool
+ * 
+ * Return a boolean so we can know if the specific variation
+ * is enabled or not (based on the configuration).
+ *
+ */
+function _price_in_time_check_bundle_enabled($bundle) {
+  return @\Drupal::config('price_in_time.settings')->get($bundle)['enabled'];
+}
+
+/**
+ * Implements _hook_get_times_slots().
+ *
+ * @param string $bundle
+ * @return array
+ * 
+ * Return all the times related to the single variation bundle, so
+ * an array with this structure: 
+ * 
+ * key => [
+ *  start_time,
+ *  end_time,
+ *  free_shipping,
+ * ]
+ *
+ */
+function _price_in_time_get_times_slots($bundle) {
+  return @\Drupal::config('price_in_time.settings')->get($bundle)['times'];
+}
+
+/**
+ * Implements _hook_get_slot_price_default_value().
+ *
+ * @param string $uuid
+ * @return array
+ * 
+ * Return the price (number and currency code) related to the 
+ * single product in the specific slot uuid. Return empty price
+ * if it was not set prevs.
+ *
+ */
+function _price_in_time_get_slot_price_default_value($uuid, $sku) {
+  return
+    is_array(
+      $default_price_value = \Drupal::database()
+        ->select('commerce_product_variation_slots_data', 'commerce_product_slots')
+        ->condition('commerce_product_slots.slot_uuid', $uuid)
+        ->condition('commerce_product_slots.product_variation_sku', $sku)
+        ->fields('commerce_product_slots', ['number', 'currency_code'])
+        ->execute()
+        ->fetchAssoc()
+    ) ? $default_price_value : [
+      'number' => '',        # set an empty value for the price.
+      'currency_code' => '', # get the default value.
+    ];
+}

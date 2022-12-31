@@ -1,0 +1,8 @@
+name: Price in Time
+type: module
+description: This module provide a custom resolver for products price by time slots.
+package: Custom
+core_version_requirement: ^9 || ^10
+dependencies:
+  - commerce:commerce
+  - commerce:commerce_price

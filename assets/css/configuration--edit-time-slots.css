@@ -1,0 +1,14 @@
+.price_in_time__slots_element .fieldset-wrapper {
+  display: flex;
+  margin-top: 15px;
+  align-items: last baseline;
+}
+.price_in_time__slots_element .fieldset-wrapper .price_in_time__slots_element__start {
+  margin-right: 10px;
+}
+.price_in_time__slots_element .fieldset-wrapper .price_in_time__slots_element__end {
+  margin-left: 10px;
+}
+.price_in_time__slots_element .fieldset-wrapper .price_in_time__slots_element__free_shipping {
+  margin-left: 20px;
+}

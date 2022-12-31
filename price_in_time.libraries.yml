@@ -1,0 +1,6 @@
+price_in_time:
+  css:
+    component:
+      assets/css/configuration--edit-time-slots.css: {}
+  dependencies:
+    - core/drupalSettings

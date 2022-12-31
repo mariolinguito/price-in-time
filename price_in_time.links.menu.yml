@@ -1,0 +1,6 @@
+price_in_time.product_type_time_slots:
+  title: Time slots
+  description: Add time slots for different product types and free shipping on checkout.
+  route_name: price_in_time.product_type_time_slots
+  parent: 'commerce_product.configuration'
+  weight: 10

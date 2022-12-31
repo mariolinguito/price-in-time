@@ -1,0 +1,12 @@
+services:
+  price_in_time.bonus_order_processor:
+    class: Drupal\price_in_time\OrderProcessor\FreeShippingOrderProcessor
+    arguments: ['@config.factory', '@database']
+    tags:
+      - { name: commerce_order.order_processor, priority: -300 }
+
+  price_in_time.times_resolver:
+    class: Drupal\price_in_time\Resolvers\PriceResolver
+    arguments: ['@config.factory', '@database']
+    tags:
+      - { name: commerce_price.price_resolver, priority: 200 }
