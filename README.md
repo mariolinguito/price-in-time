@@ -39,7 +39,7 @@ This is an example of an order where we previously set the free shipping on the 
 
 ![Example order with a free shipping bonus](./assets/screenshots/example-order-free-shipping.png)
 
-As you can see, the bonus worth the same as the shipping costs (and this is true for every shipping method with different prices).
+As you can see, the bonus worth the same as the shipping costs (and this is true for every shipping method with different prices). The shipping bonus will be applied if one of the products in the cart is of the type specified on the configuration page.
 
 ### Look at the permissions
 If you want to enable some roles the possibility to change and adjust time slots configuration, you can give these the following permission:
