@@ -23,7 +23,7 @@ For the single slot, we can specify the free shipping option, so on the checkout
 **Tips:** after the submission, you should rebuild the cache to make sure that all configurations will be applied.
 
 ### On the product page
-The form with all slots will appear only after the first node/product saving. Initially, you will see this message on the node creation page:
+The form with all slots will appear only after the first product variation saving. Initially, you will see this message on the product variation creation page:
 
 ![Creation page of a product](./assets/screenshots/product-creation-page.png)
 
