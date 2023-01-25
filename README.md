@@ -8,7 +8,7 @@ First of all, enable it as usual and go to the configuration page on: _/admin/co
 ![Configuration page of the module](./assets/screenshots/configuration-page.png)
 
 ### Set the configuration
-To enable the module, you should check on the options: **Enable for this product type.** and set the start and end times of every single slot. For example, a configuration can be the following: 
+To enable the module, you should check on the options: **Enable for this product type.** and set the start and end times of every single slot. For example, a configuration can be the following:
 
 `Start time: 00:00:00 - End time: 16:00:00`
 
@@ -23,7 +23,7 @@ For the single slot, we can specify the free shipping option, so on the checkout
 **Tips:** after the submission, you should rebuild the cache to make sure that all configurations will be applied.
 
 ### On the product page
-The form with all slots will appear only after the first node/product saving. Initially, you will see this message on the node creation page:
+The form with all slots will appear only after the first product variation saving. Initially, you will see this message on the product variation creation page:
 
 ![Creation page of a product](./assets/screenshots/product-creation-page.png)
 
