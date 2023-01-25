@@ -13,7 +13,8 @@ use Drupal\Core\Database\Connection;
 use Drupal\Core\Datetime\DrupalDateTime;
 
 /**
- * Applies a 5% discount per high quanity item because it is Thursday.
+ * Check for free shipping during order processing (based on
+ * product variation included into basket).
  */
 class FreeShippingOrderProcessor implements OrderProcessorInterface {
 
@@ -71,19 +72,17 @@ class FreeShippingOrderProcessor implements OrderProcessorInterface {
         'label' => t('Free shipping bonus'),
         'amount' => $shipment->getAmount()->multiply('-1'),
       ]));
-
-      $order->collectAdjustments();
     }
   }
 
   /**
-   * 
+   *
    * @param array $order_items
    * @return bool
-   * 
+   *
    * This will return true if the free shipping is set for the specific
    * slot of time, otherwise false (will not apply the bonus on checkout).
-   * 
+   *
    */
   private function checkForFreeShippingTime($order_items) {
 
